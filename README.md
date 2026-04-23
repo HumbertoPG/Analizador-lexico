@@ -1,1 +1,1 @@
-# Analizador-l-xico
+# Analizador-lexico
