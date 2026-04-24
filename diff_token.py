@@ -4,6 +4,16 @@ import io
 import token
 import keyword
 from difflib import SequenceMatcher
+from pathlib import Path
+
+
+def _resolver_demo_dir():
+    base_dir = Path(__file__).resolve().parent
+    for folder_name in ("files", "src"):
+        candidate = base_dir / folder_name
+        if candidate.is_dir():
+            return candidate
+    return base_dir / "files"
 
 def obtener_tokens_limpios(source_code):
     bytes_code = source_code.encode('utf-8')
@@ -78,14 +88,15 @@ def detectar_plagio_tokenizado(ruta_a, ruta_b, umbral_tokens=15):
     return resultados
 
 if __name__ == "__main__":
-    archivo1 = "./src/LOW_4_1386802.py"
-    archivo2 = "./src/LOW_6_1434903.py"
+    data_dir = _resolver_demo_dir()
+    archivo1 = data_dir / "LOW_4_1386802.py"
+    archivo2 = data_dir / "LOW_6_1434903.py"
     
     if os.path.exists(archivo1) and os.path.exists(archivo2):
         clones = detectar_plagio_tokenizado(archivo1, archivo2, umbral_tokens=15)
         
         print("\n=== PLAGIO ESTRUCTURAL (DIFFLIB + TOKENS) ===")
         for i, clon in enumerate(clones, 1):
-            print(f"\n[Coincidencia #{i}] - {clon['tokens_coincidentes']} tokens")
-            print(f"  -> Archivo A (Líneas {clon['lineas_archivo_a']})")
-            print(f"  -> Archivo B (Líneas {clon['lineas_archivo_b']})")
+            print(f"\n[Coincidencia #{i}] - {clon['tamano']} tokens")
+            print(f"  -> Archivo A (Líneas {clon['lineas_a']})")
+            print(f"  -> Archivo B (Líneas {clon['lineas_b']})")

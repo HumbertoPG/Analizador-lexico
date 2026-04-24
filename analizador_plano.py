@@ -1,5 +1,15 @@
 import os
 import pandas as pd
+from pathlib import Path
+
+
+def _default_input_dir():
+    base_dir = Path(__file__).resolve().parent
+    for folder_name in ("files", "src"):
+        candidate = base_dir / folder_name
+        if candidate.is_dir():
+            return str(candidate)
+    return str(base_dir / "files")
 
 def analizar_archivo(df, nombre_archivo):
 
@@ -191,7 +201,9 @@ def comparar_dos_plano(ruta1, ruta2, umbral=80):
              "lineas_a": c["lineas_a"],
              "lineas_b": c["lineas_b"]} for c in clones]
 
-def obtener_reporte_plano(ruta="./src"):
+def obtener_reporte_plano(ruta=None):
+    if ruta is None:
+        ruta = _default_input_dir()
     resultados = procesar_directorio_plano(ruta)
     if not resultados: return pd.DataFrame()
 

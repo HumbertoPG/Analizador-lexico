@@ -2,6 +2,7 @@ import tkinter as tk
 from tkinter import ttk
 import os
 import pandas as pd
+from pathlib import Path
 
 # Importamos las funciones que empaquetaste en tus otros archivos
 # (Asegúrate de que los nombres de los archivos y funciones coincidan con los tuyos)
@@ -13,6 +14,9 @@ class PlagioApp:
         self.root = root
         self.root.title("Analizador de Plagio - Reto")
         self.root.geometry("1200x700")
+
+        self.base_dir = Path(__file__).resolve().parent
+        self.data_dir = self._resolver_data_dir()
 
         # Paleta de colores suaves para los diferentes bloques de plagio
         self.colores = [
@@ -27,6 +31,13 @@ class PlagioApp:
         self._construir_ui()
         self._cargar_archivos_src()
 
+    def _resolver_data_dir(self):
+        for folder_name in ("files", "src"):
+            candidate = self.base_dir / folder_name
+            if candidate.is_dir():
+                return candidate
+        return self.base_dir / "files"
+
     def _construir_ui(self):
         self.paned = ttk.PanedWindow(self.root, orient=tk.HORIZONTAL)
         self.paned.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
@@ -34,7 +45,7 @@ class PlagioApp:
         self.frame_izq = ttk.Frame(self.paned, width=200)
         self.paned.add(self.frame_izq, weight=1)
 
-        tk.Label(self.frame_izq, text="Archivos en ./src", font=("Arial", 11, "bold")).pack(pady=5)
+        tk.Label(self.frame_izq, text=f"Archivos en {self.data_dir.name}", font=("Arial", 11, "bold")).pack(pady=5)
         self.lista_archivos = tk.Listbox(self.frame_izq, font=("Consolas", 10))
         self.lista_archivos.pack(fill=tk.BOTH, expand=True)
         self.lista_archivos.bind('<<ListboxSelect>>', self.al_seleccionar_archivo)
@@ -71,8 +82,8 @@ class PlagioApp:
 
     def _cargar_archivos_src(self):
         self.lista_archivos.delete(0, tk.END)
-        if os.path.exists("./src"):
-            archivos = sorted([f for f in os.listdir("./src") if f.endswith(".py")])
+        if self.data_dir.is_dir():
+            archivos = sorted([p.name for p in self.data_dir.iterdir() if p.is_file() and p.suffix.lower() == ".py"])
             for arch in archivos:
                 self.lista_archivos.insert(tk.END, arch)
 
@@ -82,8 +93,8 @@ class PlagioApp:
         self.root.update()
         
         try:
-            self.df_baker = obtener_reporte_baker("./src")
-            self.df_plano = obtener_reporte_plano("./src")
+            self.df_baker = obtener_reporte_baker(str(self.data_dir))
+            self.df_plano = obtener_reporte_plano(str(self.data_dir))
             self.btn_escanear.config(text="✓ Análisis Completado")
         except Exception as e:
             self.btn_escanear.config(text="Error en Análisis")
@@ -108,7 +119,7 @@ class PlagioApp:
         for tag in self.txt_codigo.tag_names():
             self.txt_codigo.tag_delete(tag)
 
-        ruta = os.path.join("./src", self.archivo_actual)
+        ruta = self.data_dir / self.archivo_actual
         try:
             with open(ruta, "r", encoding="utf-8") as f:
                 self.txt_codigo.insert(tk.END, f.read())

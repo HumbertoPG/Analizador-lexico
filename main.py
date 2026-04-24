@@ -2,6 +2,7 @@ import tkinter as tk
 from tkinter import ttk
 import os
 import pandas as pd
+from pathlib import Path
 
 import analizador_baker
 import analizador_plano
@@ -13,6 +14,9 @@ class InterfazDual:
         self.root = root
         self.root.title("Comparador de Código 1-a-1 | Analizador de Plagio")
         self.root.geometry("1400x850")
+
+        self.base_dir = Path(__file__).resolve().parent
+        self.data_dir = self._resolver_data_dir()
 
         self.colores = [
             "#ffb3ba", "#ffdfba", "#ffffba", "#baffc9", "#bae1ff", 
@@ -26,6 +30,13 @@ class InterfazDual:
 
         self._construir_layout()
         self._actualizar_dropdowns()
+
+    def _resolver_data_dir(self):
+        for folder_name in ("files", "src"):
+            candidate = self.base_dir / folder_name
+            if candidate.is_dir():
+                return candidate
+        return self.base_dir / "files"
 
     def _construir_layout(self):
         self.main_frame = ttk.Frame(self.root)
@@ -71,8 +82,8 @@ class InterfazDual:
         self.txt_resumen.tag_config("texto_normal", foreground="#333333")
 
     def _actualizar_dropdowns(self):
-        if os.path.exists("./files"):
-            archivos = sorted([f for f in os.listdir("./files") if f.endswith(".py")])
+        if self.data_dir.is_dir():
+            archivos = sorted([p.name for p in self.data_dir.iterdir() if p.is_file() and p.suffix.lower() == ".py"])
             self.combo_a['values'] = archivos
             self.combo_b['values'] = archivos
 
@@ -92,8 +103,8 @@ class InterfazDual:
                 if tag != "texto_normal": txt.tag_delete(tag)
 
         try:
-            with open(f"./files/{file_a}", 'r', encoding='utf-8') as f: self.txt_a.insert(tk.END, f.read())
-            with open(f"./files/{file_b}", 'r', encoding='utf-8') as f: self.txt_b.insert(tk.END, f.read())
+            with open(self.data_dir / file_a, 'r', encoding='utf-8') as f: self.txt_a.insert(tk.END, f.read())
+            with open(self.data_dir / file_b, 'r', encoding='utf-8') as f: self.txt_b.insert(tk.END, f.read())
         except Exception as e:
             self.txt_resumen.insert(tk.END, f"Error cargando archivos: {e}")
 
@@ -104,23 +115,24 @@ class InterfazDual:
             txt.config(state=tk.DISABLED)
 
     def ejecutar_comparacion(self, fa, fb, m):
-        ruta1, ruta2 = f"./files/{fa}", f"./files/{fb}"
+        ruta1 = self.data_dir / fa
+        ruta2 = self.data_dir / fb
         clones = []
         unidad = ""
 
         try:
 
             if m == "Baker":
-                clones = analizador_baker.comparar_dos_baker(ruta1, ruta2)
+                clones = analizador_baker.comparar_dos_baker(str(ruta1), str(ruta2))
                 unidad = "Tokens"
             elif m == "Suffix Plano":
-                clones = analizador_plano.comparar_dos_plano(ruta1, ruta2)
+                clones = analizador_plano.comparar_dos_plano(str(ruta1), str(ruta2))
                 unidad = "Chars"
             elif m == "Diff Plano":
-                clones = diff_plano.detectar_plagio_plano(ruta1, ruta2)
+                clones = diff_plano.detectar_plagio_plano(str(ruta1), str(ruta2))
                 unidad = "Chars"
             elif m == "Diff Tokens":
-                clones = diff_token.detectar_plagio_tokenizado(ruta1, ruta2)
+                clones = diff_token.detectar_plagio_tokenizado(str(ruta1), str(ruta2))
                 unidad = "Tokens"
 
             with open(ruta1, 'r', encoding='utf-8') as f:

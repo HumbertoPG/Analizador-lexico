@@ -4,6 +4,16 @@ import token
 import keyword
 import os
 import pandas as pd
+from pathlib import Path
+
+
+def _default_input_dir():
+    base_dir = Path(__file__).resolve().parent
+    for folder_name in ("files", "src"):
+        candidate = base_dir / folder_name
+        if candidate.is_dir():
+            return str(candidate)
+    return str(base_dir / "files")
 
 
 def analizar_archivo(df, nombre_archivo):
@@ -296,7 +306,9 @@ def comparar_dos_baker(ruta1, ruta2, umbral=15):
         
     return resultados
 
-def obtener_reporte_baker(ruta="./src"):
+def obtener_reporte_baker(ruta=None):
+    if ruta is None:
+        ruta = _default_input_dir()
     resultados = procesar_directorio(ruta)
     if not resultados: return pd.DataFrame()
     

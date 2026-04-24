@@ -1,5 +1,15 @@
 import os
 from difflib import SequenceMatcher
+from pathlib import Path
+
+
+def _resolver_demo_dir():
+    base_dir = Path(__file__).resolve().parent
+    for folder_name in ("files", "src"):
+        candidate = base_dir / folder_name
+        if candidate.is_dir():
+            return candidate
+    return base_dir / "files"
 
 def detectar_plagio_plano(ruta_a, ruta_b, umbral_caracteres=80):
     """
@@ -37,15 +47,15 @@ def detectar_plagio_plano(ruta_a, ruta_b, umbral_caracteres=80):
     return resultados
 
 if __name__ == "__main__":
-    archivo1 = "./src/codigo_A.py"
-    archivo2 = "./src/codigo_B.py"
+    data_dir = _resolver_demo_dir()
+    archivo1 = data_dir / "codigo_A.py"
+    archivo2 = data_dir / "codigo_B.py"
     
     if os.path.exists(archivo1) and os.path.exists(archivo2):
         clones = detectar_plagio_plano(archivo1, archivo2, umbral_caracteres=80)
         
         print("\n=== PLAGIO EN TEXTO PLANO (DIFFLIB) ===")
         for i, clon in enumerate(clones, 1):
-            print(f"\n[Coincidencia #{i}] - {clon['caracteres_coincidentes']} caracteres")
-            print(f"  -> Archivo A (Líneas {clon['lineas_archivo_a']})")
-            print(f"  -> Archivo B (Líneas {clon['lineas_archivo_b']})")
-            print(f"  -> Código: '{clon['fragmento_muestra']}'")
+            print(f"\n[Coincidencia #{i}] - {clon['tamano']} caracteres")
+            print(f"  -> Archivo A (Líneas {clon['lineas_a']})")
+            print(f"  -> Archivo B (Líneas {clon['lineas_b']})")
